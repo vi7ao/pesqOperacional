@@ -124,6 +124,11 @@ def writeProblemInfeasible():
     arquivo = open("resultadosOtimizacao.txt", "w")
     arquivo.write("Problem infeasible")
     arquivo.close()
+    
+def writeProblemUnbounded():
+    arquivo = open("resultadosOtimizacao.txt", "w")
+    arquivo.write("Solution unbounded")
+    arquivo.close()
 
 def calculoTheta(xb, y):
     theta = [0.0] * len(xb)
@@ -140,6 +145,12 @@ def indiceVariavelSair(theta):
             thetaMinimo = theta[i]
             indice = i
     return indice
+
+def checkUnbound(y):
+    for i in range(len(y)):
+        if y[i] > 0:
+            return False
+    return True
 
 def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis):
         if maxOrMin == "max":
@@ -160,6 +171,9 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
                 writeSolutionToFile(z, xb, nomeVariaveis)
                 exit()
             y = calculoDirecaoSimplex(matrizInvertida, matrizNaoBasica, indicePraEntrarBase)
+            if checkUnbound(y):
+                writeProblemUnbounded()
+                exit()
             theta = calculoTheta(xb, y)
             indiceVariavelPraSair = indiceVariavelSair(theta)
             if (indiceVariavelPraSair == -1):
