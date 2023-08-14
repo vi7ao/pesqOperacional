@@ -120,9 +120,9 @@ def writeSolutionToFile(z, xb, nomeVariaveis):
         arquivo.write(nomeVariaveis[i] + ": " + str(xb[i]) + "\n")
     arquivo.close()
 
-def writeSolutionUnbounded():
+def writeProblemInfeasible():
     arquivo = open("resultadosOtimizacao.txt", "w")
-    arquivo.write("Solution unbouded")
+    arquivo.write("Problem infeasible")
     arquivo.close()
 
 def calculoTheta(xb, y):
@@ -163,7 +163,7 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
             theta = calculoTheta(xb, y)
             indiceVariavelPraSair = indiceVariavelSair(theta)
             if (indiceVariavelPraSair == -1):
-                writeSolutionUnbounded()
+                writeProblemInfeasible()
                 exit()
             else:
                 for i in range(len(matrizBasica)):
