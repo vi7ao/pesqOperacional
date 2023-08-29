@@ -4,9 +4,14 @@
 # Andre Negreli Conrado Bini
 
 import cplex
+import sys #linha incluida para ler o arquivo no terminal
+
+# para rodar digite no terminal o seguinte comando:
+# python3 arenales.py "nome-do-arquivo"
 
 def getInfoFromCplexFile():
-    arquivo = cplex.Cplex("teste.cplex.lp", "LP")
+    filename = sys.argv[-1] # linha incluída
+    arquivo = cplex.Cplex(filename, "LP") # linha modificada
     nomeVariaveis = arquivo.variables.get_names()
     numeroVariaveis = arquivo.variables.get_num()
     numeroRestricoes = arquivo.linear_constraints.get_num()
@@ -113,22 +118,11 @@ def calculoDirecaoSimplex(matrizInvertida, matrizNaoBasica, indicePraEntrarBase)
     direcao = multiplicaMatrizPorVetor(matrizInvertida, coluna)
     return direcao
     
-def writeSolutionToFile(z, xb, nomeVariaveis):
-    arquivo = open("resultadosOtimizacao.sol", "w")
-    arquivo.write("z: " + str(z) + "\n")
+def printSolution(z, xb, nomeVariaveis):
+    print("z: " + str(z))
     for i in range(len(nomeVariaveis)):
-        arquivo.write(nomeVariaveis[i] + ": " + str(xb[i]) + "\n")
-    arquivo.close()
-
-def writeProblemInfeasible():
-    arquivo = open("resultadosOtimizacao.txt", "w")
-    arquivo.write("Problem infeasible")
-    arquivo.close()
-    
-def writeProblemUnbounded():
-    arquivo = open("resultadosOtimizacao.txt", "w")
-    arquivo.write("Solution unbounded")
-    arquivo.close()
+        print(nomeVariaveis[i] + ": " + str(xb[i]))
+    return
 
 def calculoTheta(xb, y):
     theta = [0.0] * len(xb)
@@ -168,16 +162,16 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
                 z = calculoSolucaoOtima(xb, custo_b)
                 if maxOrMin == "max":
                     z = -z
-                writeSolutionToFile(z, xb, nomeVariaveis)
+                printSolution(z, xb, nomeVariaveis)
                 exit()
             y = calculoDirecaoSimplex(matrizInvertida, matrizNaoBasica, indicePraEntrarBase)
             if checkUnbound(y):
-                writeProblemUnbounded()
+                print("Solution unbounded")
                 exit()
             theta = calculoTheta(xb, y)
             indiceVariavelPraSair = indiceVariavelSair(theta)
             if (indiceVariavelPraSair == -1):
-                writeProblemInfeasible()
+                print("Problem unfeasible")
                 exit()
             else:
                 for i in range(len(matrizBasica)):
