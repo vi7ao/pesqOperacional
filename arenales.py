@@ -10,21 +10,58 @@ import sys #linha incluida para ler o arquivo no terminal
 # python3 arenales.py "nome-do-arquivo"
 
 def getInfoFromCplexFile():
-    filename = sys.argv[-1] # linha incluída
-    arquivo = cplex.Cplex(filename, "LP") # linha modificada
-    nomeVariaveis = arquivo.variables.get_names()
+    filename = sys.argv[-1]
+    arquivo = cplex.Cplex(filename, "LP")
+    precisaFaseUm = False
+    variaveisArtificiais = 0
     numeroVariaveis = arquivo.variables.get_num()
+    for i in range(numeroVariaveis):
+        if arquivo.variables.get_lower_bounds(i) != 0:
+            arquivo.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=[arquivo.variables.get_names()[i]],
+                val=[1])],
+                senses=["G"],
+                rhs=[arquivo.variables.get_lower_bounds(i)])
+        if arquivo.variables.get_upper_bounds(i) != 1e+20:
+            arquivo.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=[arquivo.variables.get_names()[i]],
+                val=[1])],
+                senses=["L"],
+                rhs=[arquivo.variables.get_upper_bounds(i)])
+    nomeVariaveis = arquivo.variables.get_names()
     numeroRestricoes = arquivo.linear_constraints.get_num()
     coeficientes = arquivo.linear_constraints.get_rows()
+    funcaoObj = arquivo.objective.get_linear()
+    # verificacao se precisa fase 1
+    if arquivo.objective.get_sense() == arquivo.objective.sense.maximize:
+        sentidoOriginal = "maximize"
+        for i in range (numeroVariaveis):
+            funcaoObj[i] = funcaoObj[i] * -1
+    else:
+        sentidoOriginal = "minimize"
     matrizNaoBasica = [[0.0] * numeroVariaveis for i in range(numeroRestricoes)]
     for i in range(numeroRestricoes):
         for j, var in enumerate(coeficientes[i].ind):
             matrizNaoBasica[i][var] = coeficientes[i].val[j]
+    constraint_senses = arquivo.linear_constraints.get_senses()
+    vetorB = [0.0] * numeroRestricoes
+    for i in range(numeroRestricoes):
+        vetorB[i] = arquivo.linear_constraints.get_rhs(i)
+        if vetorB[i] < 0:
+            if constraint_senses[i] == "L":
+                constraint_senses[i] = "G"
+            elif constraint_senses[i] == "G":
+                constraint_senses[i] = "L"
+            vetorB[i] = vetorB[i] * -1
+            for j in range(len(matrizNaoBasica[i])):
+                matrizNaoBasica[i][j] *= -1          
+        if arquivo.linear_constraints.get_senses(i) == "E" :
+            precisaFaseUm = True
+            variaveisArtificiais += 1
+        if arquivo.linear_constraints.get_senses(i) == "G":
+            precisaFaseUm = True
     cn = arquivo.objective.get_linear()
     cb = [0.0] * numeroRestricoes
-    vetorB = arquivo.linear_constraints.get_rhs()
-    constraint_senses = arquivo.linear_constraints.get_senses()
     matrizBasica = []
+    
     for i in range(numeroRestricoes):
         matrizBasica.append([0] * numeroRestricoes)
     for i in range(numeroRestricoes):
@@ -33,13 +70,8 @@ def getInfoFromCplexFile():
         elif constraint_senses[i] == "G":
             matrizBasica[i][i] = -1
         else:
-            matrizBasica[i][i] = 0        
-    if arquivo.objective.get_sense() == -1:
-        maxOrMin = "max"
-    else:
-        maxOrMin = "min"
-        
-    return matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis
+            matrizBasica[i][i] = 0    
+    return matrizNaoBasica, matrizBasica, vetorB, cn, cb, precisaFaseUm, nomeVariaveis, sentidoOriginal, variaveisArtificiais
 
 def gerarMatrizIdentidade(n):
     identidade = [[0 for x in range(n)] for y in range(n)]
@@ -146,9 +178,11 @@ def checkUnbound(y):
             return False
     return True
 
-def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis):
-        if maxOrMin == "max":
-            custo_n = [-x for x in custo_n]
+def simplexFase1(matrizNaoBasica, vetor_b, custo_n, custo_b, nomeVariaveis):
+    
+    return
+
+def simplexFase2(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, nomeVariaveis, sentidoOriginal):
         solucaoOtima = False
         iteracao = 1
         while(not solucaoOtima):
@@ -160,8 +194,8 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
             if checarSolucaoOtima(custosRelativos):
                 solucaoOtima = True
                 z = calculoSolucaoOtima(xb, custo_b)
-                if maxOrMin == "max":
-                    z = -z
+                if sentidoOriginal == "maximize":
+                    z = z * -1.0
                 printSolution(z, xb, nomeVariaveis)
                 exit()
             y = calculoDirecaoSimplex(matrizInvertida, matrizNaoBasica, indicePraEntrarBase)
@@ -180,8 +214,23 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
                 iteracao += 1
             
 def main():
-    matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis = getInfoFromCplexFile()
-    simplex(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis)
+    matrizNaoBasica, matrizBasica, vetorB, cn, cb, precisaFaseUm, nomeVariaveis, sentidoOriginal, numeroArtificiais = getInfoFromCplexFile()
+    print (matrizNaoBasica)
+    print (matrizBasica)
+    print (vetorB)
+    print (cn)
+    print (cb)
+    print (precisaFaseUm)
+    print (nomeVariaveis)
+    print (sentidoOriginal)
+    print (numeroArtificiais)
+    if precisaFaseUm == True:
+        print("precisa fase 1")
+        #simplexFase1(matrizNaoBasica, matrizBasica, vetorB, cn, cb, nomeVariaveis)
+    else:
+        print("nao precisa fase 1")
+        simplexFase2(matrizNaoBasica, matrizBasica, vetorB, cn, cb, nomeVariaveis, sentidoOriginal)
+
 
 if __name__ == "__main__":
     main()
