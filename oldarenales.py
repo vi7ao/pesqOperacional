@@ -190,7 +190,7 @@ def otimalidadeFase1(indicePraEntrarBase, numeroArtificiais, matrizBasica):
     if indicePraEntrarBase >= 0:
         variaveisArtificiaisNaBase = verificaVariaveisArtificiaisNaBase(matrizBasica, numeroArtificiais)
         if variaveisArtificiaisNaBase > 0:
-            print("Problema infactível.")
+            print("Problem infeasible.")
         else:
             return True
     
@@ -209,12 +209,12 @@ def fase1(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, no
             return matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis
         y = calculoDirecaoSimplex(matrizInvertida, matrizNaoBasica, indicePraEntrarBase)
         if checkUnbound(y):
-            print("Problema infactivel.")
+            print("Problem infeasible.")
             exit()
         theta = calculoTheta(xb, y)
         indiceVariavelPraSair = indiceVariavelSair(theta)
         if (indiceVariavelPraSair == -1):
-            print("Problema infactivel.")
+            print("Problem infeasible.")
             exit()
         else:
             for i in range(len(matrizBasica)):
