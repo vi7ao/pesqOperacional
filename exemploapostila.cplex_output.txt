@@ -1,0 +1,80 @@
+Matriz não básica: 
+[1.0, 1.0]
+[1.0, -1.0]
+[-1.0, 1.0]
+Matriz básica: 
+[1, 0, 0]
+[0, 1, 0]
+[0, 0, 1]
+Vetor B: 
+[6.0, 4.0, 4.0]
+Vetor Cn: 
+[-1.0, -2.0]
+Vetor Cb: 
+[0.0, 0.0, 0.0]
+Max or Min: 
+min
+Precisa Fase 1: 
+False
+Variaveis Artificiais: 
+0
+Fim leitura arquivo 
+Inicio Simplex 
+Iteracao: 1
+Matriz Extendida: 
+[1, 0, 0, 1, 0, 0]
+[0, 1, 0, 0, 1, 0]
+[0, 0, 1, 0, 0, 1]
+Matriz Invertida: 
+[1.0, 0.0, 0.0]
+[0.0, 1.0, 0.0]
+[0.0, 0.0, 1.0]
+Vetor Resultante: 
+[6.0, 4.0, 4.0]
+Vetor Multiplicador: [0.0, 0.0, 0.0]
+Custos Relativos: [-1.0, -2.0]
+Indice do Valor Minimo: 1
+Custos relativos menor que zero, solucao nao otima 
+Vetor Resultante: 
+[1.0, -1.0, 1.0]
+Direcao simples: [1.0, -1.0, 1.0]
+Theta: [6.0, 0.0, 4.0]
+Indice Variavel Sair: 2
+Iteracao: 2
+Matriz Extendida: 
+[1, 0, 1.0, 1, 0, 0]
+[0, 1, -1.0, 0, 1, 0]
+[0, 0, 1.0, 0, 0, 1]
+Matriz Invertida: 
+[1.0, 0.0, -1.0]
+[0.0, 1.0, 1.0]
+[0.0, 0.0, 1.0]
+Vetor Resultante: 
+[2.0, 8.0, 4.0]
+Vetor Multiplicador: [0.0, 0.0, -2.0]
+Custos Relativos: [-1.0, 0.0]
+Indice do Valor Minimo: 0
+Custos relativos menor que zero, solucao nao otima 
+Vetor Resultante: 
+[2.0, 0.0, -1.0]
+Direcao simples: [2.0, 0.0, -1.0]
+Theta: [1.0, 0.0, 0.0]
+Indice Variavel Sair: 0
+Iteracao: 3
+Matriz Extendida: 
+[1.0, 0, 1.0, 1, 0, 0]
+[1.0, 1, -1.0, 0, 1, 0]
+[-1.0, 0, 1.0, 0, 0, 1]
+Matriz Invertida: 
+[0.5, 0.0, -0.5]
+[0.0, 1.0, 1.0]
+[0.5, 0.0, 0.5]
+Vetor Resultante: 
+[1.0, 8.0, 5.0]
+Vetor Multiplicador: [-1.5, 0.0, -0.5]
+Custos Relativos: [1.5, 0.0]
+Indice do Valor Minimo: 1
+Custos relativos maior que zero, solucao otima 
+z: -11.0
+x1: 1.0
+x2: 8.0
