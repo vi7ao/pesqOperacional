@@ -31,41 +31,27 @@ def getInfoFromCplexFile():
     numeroVariaveis = arquivo.variables.get_num()
     numeroRestricoes = arquivo.linear_constraints.get_num()
     coeficientes = arquivo.linear_constraints.get_rows()
-    variaveisArtificiais = 0
     precisaFaseUm = False
-    # verificacao se precisa fase 1
     matrizNaoBasica = [[0.0] * numeroVariaveis for i in range(numeroRestricoes)]
     for i in range(numeroRestricoes):
         for j, var in enumerate(coeficientes[i].ind):
-            matrizNaoBasica[i][var] = coeficientes[i].val[j]
+            matrizNaoBasica[i][var] = coeficientes[i].val[j] #inicializa matriz naoBasica
     sinalRestricoes = arquivo.linear_constraints.get_senses()
     vetorB = [0.0] * numeroRestricoes
-    flagMudadoSinal = [False] * numeroRestricoes
     for i in range(numeroRestricoes):
-        vetorB[i] = arquivo.linear_constraints.get_rhs(i)
-        if vetorB[i] < 0:
+        vetorB[i] = arquivo.linear_constraints.get_rhs(i) #inicializa vetor b
+        if vetorB[i] < 0: #tratamento de trocar sinal de restrições caso b < 0
             if sinalRestricoes[i] == "L":
                 sinalRestricoes[i] = "G"
             elif sinalRestricoes[i] == "G":
                 sinalRestricoes[i] = "L"
             vetorB[i] = vetorB[i] * -1
             for j in range(len(matrizNaoBasica[i])):
-                print("antes: " + str(matrizNaoBasica[i][j]))
                 matrizNaoBasica[i][j] *= -1 
-                print("depois: " + str(matrizNaoBasica[i][j]))
-                flagMudadoSinal[i] = True
         if arquivo.linear_constraints.get_senses(i) == "E" :
             precisaFaseUm = True
-            variaveisArtificiais += 1
         if arquivo.linear_constraints.get_senses(i) == "G":
             precisaFaseUm = True
-            variaveisArtificiais += 1
-    for i in range(numeroRestricoes):
-        for j, var in enumerate(coeficientes[i].ind):
-            print("antes: " + str(matrizNaoBasica[i][var]))
-            if not flagMudadoSinal[i]:
-                matrizNaoBasica[i][var] = coeficientes[i].val[j]
-            print("depois: " + str(matrizNaoBasica[i][var]))
     cn = arquivo.objective.get_linear()
     cb = [0.0] * numeroRestricoes
     sinalRestricoes = arquivo.linear_constraints.get_senses()
@@ -74,9 +60,9 @@ def getInfoFromCplexFile():
     for i in range(numeroRestricoes):
         matrizBasica.append([0] * numeroRestricoes)
     for i in range(numeroRestricoes):
-        if sinalRestricoes[i] == "L":
+        if sinalRestricoes[i] == "L": #add variavel de folga
             matrizBasica[i][i] = 1
-        elif sinalRestricoes[i] == "G":
+        elif sinalRestricoes[i] == "G": #add variavel de excesso
             matrizBasica[i][i] = -1
         else:
             matrizBasica[i][i] = 0        
@@ -110,11 +96,94 @@ def getInfoFromCplexFile():
     writeOutputToFile(str(maxOrMin) + "\n")
     writeOutputToFile("Precisa Fase 1: \n")
     writeOutputToFile(str(precisaFaseUm) + "\n")
-    writeOutputToFile("Variaveis Artificiais: \n")
-    writeOutputToFile(str(variaveisArtificiais) + "\n")
     writeOutputToFile("Fim leitura arquivo \n")
-    return matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, precisaFaseUm, variaveisArtificiais, variaveisBasicas, variaveisNaoBasicas
+    if precisaFaseUm:
+        formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas, numeroRestricoes, cn, cb, maxOrMin)
+    else:
+        simplex(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas)
 
+def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas, numeroRestricoes, cnOriginal, cbOriginal, maxOrMin):
+    writeOutputToFile("Inicio Fase 1 \n")
+    matrizNaoBasicaFase1 = []
+    for i in range(len(matrizNaoBasica)):
+        matrizNaoBasicaFase1.append(matrizNaoBasica[i] + matrizBasica[i])
+    writeOutputToFile("Matriz não básica fase 1: \n")
+    for i in range(len(matrizNaoBasicaFase1)):
+        writeOutputToFile(str(matrizNaoBasicaFase1[i]) + "\n")
+    matrizBasicaFase1 = []
+    writeOutputToFile("Matriz básica fase 1: \n")
+    for i in range(numeroRestricoes):
+        matrizBasicaFase1.append([0] * numeroRestricoes)
+    for i in range(numeroRestricoes):
+        matrizBasicaFase1[i][i] = 1
+    for i in range(len(matrizBasicaFase1)):
+        writeOutputToFile(str(matrizBasicaFase1[i]) + "\n")
+    cn = [0.0] * len(matrizNaoBasicaFase1[0])
+    writeOutputToFile("Vetor Cn fase 1: \n")
+    writeOutputToFile(str(cn) + "\n")
+    cb = [1.0] * numeroRestricoes
+    writeOutputToFile("Vetor Cb fase 1: \n")
+    writeOutputToFile(str(cb) + "\n")
+    variaveisNaoBasicasFase1 = variaveisNaoBasicas.copy()
+    for i in range(variaveisBasicas.__len__()):
+        variaveisNaoBasicasFase1.append(variaveisBasicas[i])
+    variaveisBasicasFase1 = []
+    for i in range(numeroRestricoes):
+        variaveisBasicasFase1.append("a" + str(i+1))
+    writeOutputToFile("Variaveis basicas fase 1: \n")
+    writeOutputToFile(str(variaveisBasicasFase1) + "\n")
+    writeOutputToFile("Variaveis nao basicas fase 1: \n")
+    writeOutputToFile(str(variaveisNaoBasicasFase1) + "\n")
+    writeOutputToFile("Fim formulaçao problema artificial \n")
+    iteracao = 1
+    solucaoOtima = False   
+    writeOutputToFile("Inicio simplex fase 1 \n")
+    writeOutputToFile("Iteracao: " + str(iteracao) + "\n")
+    while(not solucaoOtima):
+        matrizInvertida = inverterMatriz(matrizBasicaFase1)
+        xb = multiplicaMatrizPorVetor(matrizInvertida, vetorB)
+        vetorMultiplicador = calculoVetorMultiplicadorSimplex(cb, matrizInvertida)
+        custosRelativos = calculoCustosRelativos(vetorMultiplicador, matrizNaoBasicaFase1, cn)
+        indicePraEntrarBase = indiceDoValorMinimo(custosRelativos)
+        if custosRelativos[indicePraEntrarBase] >= 0:
+            has_artificial = any(variable.startswith('a') for variable in variaveisBasicasFase1)
+            if has_artificial:
+                print("Problema infactivel")
+                writeOutputToFile("Problema infactivel \n")
+                exit()
+            else:
+                solucaoOtima = True
+                print("goes to fase 2")
+                writeOutputToFile("goes to fase 2 \n")
+                exit() #por enquanto
+        y = calculoDirecaoSimplex(matrizInvertida, matrizNaoBasicaFase1, indicePraEntrarBase)
+        if checkUnboundF1(y):
+            print("Problema infactivel")
+            writeOutputToFile("Problema infactivel \n")
+            exit()
+        theta = calculoTheta(xb, y)
+        indiceVariavelPraSair = indiceVariavelSair(theta)
+        for i in range(len(matrizBasicaFase1)):
+            matrizBasicaFase1[i][indiceVariavelPraSair], matrizNaoBasicaFase1[i][indicePraEntrarBase] = matrizNaoBasicaFase1[i][indicePraEntrarBase], matrizBasicaFase1[i][indiceVariavelPraSair]
+        cb[indiceVariavelPraSair], cn[indicePraEntrarBase] = cn[indicePraEntrarBase], cb[indiceVariavelPraSair]
+        writeOutputToFile("Variavel " + variaveisBasicasFase1[indiceVariavelPraSair] + " sai da base e variavel " + variaveisNaoBasicasFase1[indicePraEntrarBase] + " entra na base\n")
+        variaveisBasicasFase1[indiceVariavelPraSair], variaveisNaoBasicasFase1[indicePraEntrarBase] = variaveisNaoBasicasFase1[indicePraEntrarBase], variaveisBasicasFase1[indiceVariavelPraSair]
+        has_artificial = any(variable.startswith('a') for variable in variaveisBasicasFase1)
+        if has_artificial:
+            iteracao += 1
+            writeOutputToFile("Iteracao: " + str(iteracao) + "\n")
+        else:
+            writeOutputToFile("Fim simplex fase 1 \n")
+            solucaoOtima = True
+    
+def checkUnboundF1(y):
+    for i in range(len(y)):
+        if y[i] > 0:
+            return False
+    return True       
+            
+    
+    
 # === funções da inversão de matriz ===
 
 def gerarMatrizIdentidade(n):
@@ -180,7 +249,7 @@ def calculoCustosRelativos(vetorMultiplicador, matrizNaoBasica, vetorCustoN):
     custosRelativos = [0.0] * nVariaveis
     for i in range(nVariaveis):
         col_i = [matrizNaoBasica[j][i] for j in range(nRestricoes)]
-        custosRelativos[i] = vetorCustoN[i] - (vetorMultiplicador[i] * col_i[i])
+        custosRelativos[i] = vetorCustoN[i] - sum(col_i[j] * vetorMultiplicador[j] for j in range(nRestricoes))
     writeOutputToFile("Custos Relativos: " + str(custosRelativos) + "\n")
     return custosRelativos
         
@@ -252,72 +321,6 @@ def checkUnbound(y):
             return False
     return True
 
-# === funções de variáveis artificiais ===
-def adicionarVariaveisArtificiais(matrizNaoBasica, custo_n, numeroArtificiais):
-    for i in range(numeroArtificiais):
-        matrizNaoBasica = [row + [0.0] for row in matrizNaoBasica] 
-        novaVariavelArtificial = [0.0] * len(custo_n) #ou aqui ta errado
-        novaVariavelArtificial[len(custo_n) - numeroArtificiais + i] = 1.0 #acho que ta errado aqui 
-        custo_n.extend(novaVariavelArtificial) #aqui ta errado provavelmente
-    writeOutputToFile("Após adicionar variáveis artificiais: \n")
-    writeOutputToFile("Matriz Não Básica: \n")
-    for(i) in range(len(matrizNaoBasica)):
-        writeOutputToFile(str(matrizNaoBasica[i]) + "\n")
-    writeOutputToFile("Custo N: \n")
-    writeOutputToFile(str(custo_n) + "\n")
-    return matrizNaoBasica, custo_n
-
-def verificaVariaveisArtificiaisNaBase(matrizBasica, numeroArtificiais):
-    variaveisArtificiaisNaBase = 0
-    for i in range(len(matrizBasica)):
-        for j in range(len(matrizBasica[i])):
-            if j >= len(matrizBasica[i]) - numeroArtificiais and matrizBasica[i][j] == 1:
-                variaveisArtificiaisNaBase += 1
-    writeOutputToFile("Variaveis Artificiais na Base: " + str(variaveisArtificiaisNaBase) + "\n")
-    return variaveisArtificiaisNaBase
-
-# === funções fase 1 do simplex ===
-def otimalidadeFase1(indicePraEntrarBase, numeroArtificiais, matrizBasica):
-    if indicePraEntrarBase >= 0:
-        variaveisArtificiaisNaBase = verificaVariaveisArtificiaisNaBase(matrizBasica, numeroArtificiais)
-        if variaveisArtificiaisNaBase > 0:
-            writeOutputToFile("Problem unfeasible\n")
-        else:
-            return True
-    
-def fase1(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis, numeroArtificiais):
-    iteracao = 1
-    writeOutputToFile("Inicio Fase 1 \n")
-    writeOutputToFile("Iteração: " + str(iteracao) + "\n")
-    solucaoOtima = False
-    while(not solucaoOtima):
-        matrizInvertida = inverterMatriz(matrizBasica)
-        xb = multiplicaMatrizPorVetor(matrizInvertida, vetor_b)
-        vetorMultiplicador = calculoVetorMultiplicadorSimplex(custo_b, matrizInvertida)
-        custosRelativos = calculoCustosRelativos(vetorMultiplicador, matrizNaoBasica, custo_n)
-        indicePraEntrarBase = indiceDoValorMinimo(custosRelativos) # começa do 0, diferente do material
-        if otimalidadeFase1(indicePraEntrarBase, numeroArtificiais, matrizBasica):
-            solucaoOtima = True
-            return matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis
-        y = calculoDirecaoSimplex(matrizInvertida, matrizNaoBasica, indicePraEntrarBase)
-        if checkUnbound(y):
-            writeOutputToFile("Problem unfeasible\n")
-            exit()
-        theta = calculoTheta(xb, y)
-        indiceVariavelPraSair = indiceVariavelSair(theta)
-        if (indiceVariavelPraSair == -1):
-            writeOutputToFile("Problem unfeasible\n")
-            exit()
-        else:
-            for i in range(len(matrizBasica)):
-                matrizBasica[i][indiceVariavelPraSair], matrizNaoBasica[i][indicePraEntrarBase] = matrizNaoBasica[i][indicePraEntrarBase], matrizBasica[i][indiceVariavelPraSair]
-                custo_b[indiceVariavelPraSair], custo_n[indicePraEntrarBase] = custo_n[indicePraEntrarBase], custo_b[indiceVariavelPraSair]
-                iteracao += 1
-                writeOutputToFile("Iteracao: " + str(iteracao) + "\n")
-        variaveisArtificiaisNaBase = verificaVariaveisArtificiaisNaBase(matrizBasica, numeroArtificiais)
-        if variaveisArtificiaisNaBase == 0:
-            return matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis
-
 # === simplex fase 2 ===
 def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas):
         if maxOrMin == "max":
@@ -326,7 +329,7 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
         iteracao = 1
         varBasOriginais = variaveisBasicas.copy()
         varNaoBasOriginais = variaveisNaoBasicas.copy()
-        writeOutputToFile("Inicio Simplex \n")
+        writeOutputToFile("Inicio Simplex Fase 2 \n")
         writeOutputToFile("Iteracao: " + str(iteracao) + "\n")
         while(not solucaoOtima):
             matrizInvertida = inverterMatriz(matrizBasica)
@@ -364,11 +367,11 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
                 writeOutputToFile("Iteracao: " + str(iteracao) + "\n")
             
 def main():
-    matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, precisaFaseUm, numeroArtificiais, variaveisBasicas, variaveisNaoBasicas = getInfoFromCplexFile()
-    if precisaFaseUm:
-        matrizNaoBasica, cn = adicionarVariaveisArtificiais(matrizNaoBasica, cn, numeroArtificiais)
-        matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis = fase1(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, numeroArtificiais)
-    simplex(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas)
+    getInfoFromCplexFile()
+    #if precisaFaseUm:
+    #    matrizNaoBasica, cn = adicionarVariaveisArtificiais(matrizNaoBasica, cn, numeroArtificiais)
+    #    matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis = fase1(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, numeroArtificiais)
+    #simplex(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas)
 
 if __name__ == "__main__":
     main()
