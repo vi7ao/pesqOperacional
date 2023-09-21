@@ -13,7 +13,7 @@ import datetime
 
 # === tratamento da leitura do arquivo pelo terminal e do log de saída ===
 
-logger = True # se true salva o log
+logger = False # se true salva o log
 inputFileName = sys.argv[-1]
 dt = datetime.datetime.now()
 strdt = dt.strftime("%Y%m%d%H%M%S")
@@ -48,9 +48,9 @@ def getInfoFromCplexFile():
             vetorB[i] = vetorB[i] * -1
             for j in range(len(matrizNaoBasica[i])):
                 matrizNaoBasica[i][j] *= -1 
-        if arquivo.linear_constraints.get_senses(i) == "E" :
+        if arquivo.linear_constraints.get_senses(i) == "E" or sinalRestricoes[i] == "E" :
             precisaFaseUm = True
-        if arquivo.linear_constraints.get_senses(i) == "G":
+        if arquivo.linear_constraints.get_senses(i) == "G" or sinalRestricoes[i] == "G":
             precisaFaseUm = True
     cn = arquivo.objective.get_linear()
     cb = [0.0] * numeroRestricoes
@@ -129,7 +129,7 @@ def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVari
         variaveisNaoBasicasFase1.append(variaveisBasicas[i])
     variaveisBasicasFase1 = []
     for i in range(numeroRestricoes):
-        variaveisBasicasFase1.append("a" + str(i+1))
+        variaveisBasicasFase1.append("artf" + str(i+1))
     writeOutputToFile("Variaveis basicas fase 1: \n")
     writeOutputToFile(str(variaveisBasicasFase1) + "\n")
     writeOutputToFile("Variaveis nao basicas fase 1: \n")
@@ -146,18 +146,17 @@ def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVari
         custosRelativos = calculoCustosRelativos(vetorMultiplicador, matrizNaoBasicaFase1, cn)
         indicePraEntrarBase = indiceDoValorMinimo(custosRelativos)
         if custosRelativos[indicePraEntrarBase] >= 0:
-            has_artificial = any(variable.startswith('a') for variable in variaveisBasicasFase1)
+            has_artificial = any(variable.startswith('artf') for variable in variaveisBasicasFase1)
             if has_artificial:
                 print("Problema infactivel")
                 writeOutputToFile("Problema infactivel \n")
                 exit()
             else:
                 solucaoOtima = True
-                print("goes to fase 2")
                 writeOutputToFile("goes to fase 2 \n")
-                exit() #por enquanto
+                break
         y = calculoDirecaoSimplex(matrizInvertida, matrizNaoBasicaFase1, indicePraEntrarBase)
-        if checkUnboundF1(y):
+        if checkUnbound(y):
             print("Problema infactivel")
             writeOutputToFile("Problema infactivel \n")
             exit()
@@ -168,21 +167,19 @@ def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVari
         cb[indiceVariavelPraSair], cn[indicePraEntrarBase] = cn[indicePraEntrarBase], cb[indiceVariavelPraSair]
         writeOutputToFile("Variavel " + variaveisBasicasFase1[indiceVariavelPraSair] + " sai da base e variavel " + variaveisNaoBasicasFase1[indicePraEntrarBase] + " entra na base\n")
         variaveisBasicasFase1[indiceVariavelPraSair], variaveisNaoBasicasFase1[indicePraEntrarBase] = variaveisNaoBasicasFase1[indicePraEntrarBase], variaveisBasicasFase1[indiceVariavelPraSair]
-        has_artificial = any(variable.startswith('a') for variable in variaveisBasicasFase1)
+        has_artificial = any(variable.startswith('artf') for variable in variaveisBasicasFase1)
         if has_artificial:
             iteracao += 1
             writeOutputToFile("Iteracao: " + str(iteracao) + "\n")
         else:
             writeOutputToFile("Fim simplex fase 1 \n")
-            solucaoOtima = True
-    
-def checkUnboundF1(y):
-    for i in range(len(y)):
-        if y[i] > 0:
-            return False
-    return True       
-            
-    
+            solucaoOtima = True    
+    indicesVarArtf = [i for i, variable in enumerate(variaveisNaoBasicasFase1) if variable.startswith('artf')]
+    matrizNaoBasicaFinal = [
+        [matrizNaoBasicaFase1[i][j] for j in range(len(variaveisNaoBasicasFase1)) if j not in indicesVarArtf]
+        for i in range(len(matrizNaoBasicaFase1))
+    ]
+    variaveisNaoBasicasFinal = [variable for i, variable in enumerate(variaveisNaoBasicasFase1) if i not in indicesVarArtf]    
     
 # === funções da inversão de matriz ===
 
@@ -350,6 +347,7 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
                 exit()
             y = calculoDirecaoSimplex(matrizInvertida, matrizNaoBasica, indicePraEntrarBase)
             if checkUnbound(y):
+                print("Solution unbounded")
                 writeOutputToFile("Solution unbounded \n")
                 exit()
             theta = calculoTheta(xb, y)
