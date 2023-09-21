@@ -4,17 +4,17 @@ A3: ok
 B1: ok
 B2: ok
 B3: ok
-C1: ???
+C1: ok
 D1: ok
 D2: ok
 D3: tratamento bound quando e maior que 0
 E1: ok
 E2: ok
-E3: ???
+E3: segundo o algoritmo ele seria infactivel (iteracao 3 nenhum valor nos custos relativos eh negativo, com variaveis artificiais na base ainda)
 E4: ok
-E5: ???
+E5: ok
 F1: ok
-F2: segundo o algoritmo ele seria infactivel (iteracao 17 nenhum valor nos custos relativos eh negativo)
+F2: segundo o algoritmo ele seria infactivel (iteracao 17 nenhum valor nos custos relativos eh negativo e ainda tem variaveis artificiais na base)
 F3: ok
 F4: ok
 F5: ok

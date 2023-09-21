@@ -13,7 +13,7 @@ import datetime
 
 # === tratamento da leitura do arquivo pelo terminal e do log de saída ===
 
-logger = False # se true salva o log
+logger = True # se true salva o log
 inputFileName = sys.argv[-1]
 dt = datetime.datetime.now()
 strdt = dt.strftime("%Y%m%d%H%M%S")
@@ -54,7 +54,6 @@ def getInfoFromCplexFile():
             precisaFaseUm = True
     cn = arquivo.objective.get_linear()
     cb = [0.0] * numeroRestricoes
-    sinalRestricoes = arquivo.linear_constraints.get_senses()
     matrizBasica = []
     #variaveis folga/excesso
     for i in range(numeroRestricoes):
