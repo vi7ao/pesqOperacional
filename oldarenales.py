@@ -48,9 +48,9 @@ def getInfoFromCplexFile():
             vetorB[i] = vetorB[i] * -1
             for j in range(len(matrizNaoBasica[i])):
                 matrizNaoBasica[i][j] *= -1 
-        if arquivo.linear_constraints.get_senses(i) == "E" or sinalRestricoes[i] == "E" :
+        if sinalRestricoes[i] == "E" :
             precisaFaseUm = True
-        if arquivo.linear_constraints.get_senses(i) == "G" or sinalRestricoes[i] == "G":
+        if sinalRestricoes[i] == "G":
             precisaFaseUm = True
     cn = arquivo.objective.get_linear()
     cb = [0.0] * numeroRestricoes
@@ -100,7 +100,7 @@ def getInfoFromCplexFile():
     if precisaFaseUm:
         formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas, numeroRestricoes, cn, cb, maxOrMin)
     else:
-        simplex(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas)
+        simplex(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas, False)
 
 def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas, numeroRestricoes, cnOriginal, cbOriginal, maxOrMin):
     writeOutputToFile("Inicio Fase 1 \n")
@@ -118,6 +118,7 @@ def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVari
         matrizBasicaFase1[i][i] = 1
     for i in range(len(matrizBasicaFase1)):
         writeOutputToFile(str(matrizBasicaFase1[i]) + "\n")
+    cnAux = []
     cn = [0.0] * len(matrizNaoBasicaFase1[0])
     writeOutputToFile("Vetor Cn fase 1: \n")
     writeOutputToFile(str(cn) + "\n")
@@ -130,6 +131,9 @@ def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVari
     variaveisBasicasFase1 = []
     for i in range(numeroRestricoes):
         variaveisBasicasFase1.append("artf" + str(i+1))
+    cnAux.append(cnOriginal + cbOriginal)
+    cnFim = cnAux[0]
+    cbAux = variaveisBasicasFase1.copy()
     writeOutputToFile("Variaveis basicas fase 1: \n")
     writeOutputToFile(str(variaveisBasicasFase1) + "\n")
     writeOutputToFile("Variaveis nao basicas fase 1: \n")
@@ -165,6 +169,7 @@ def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVari
         for i in range(len(matrizBasicaFase1)):
             matrizBasicaFase1[i][indiceVariavelPraSair], matrizNaoBasicaFase1[i][indicePraEntrarBase] = matrizNaoBasicaFase1[i][indicePraEntrarBase], matrizBasicaFase1[i][indiceVariavelPraSair]
         cb[indiceVariavelPraSair], cn[indicePraEntrarBase] = cn[indicePraEntrarBase], cb[indiceVariavelPraSair]
+        cbAux[indiceVariavelPraSair], cnFim[indicePraEntrarBase] = cnFim[indicePraEntrarBase], cbAux[indiceVariavelPraSair]
         writeOutputToFile("Variavel " + variaveisBasicasFase1[indiceVariavelPraSair] + " sai da base e variavel " + variaveisNaoBasicasFase1[indicePraEntrarBase] + " entra na base\n")
         variaveisBasicasFase1[indiceVariavelPraSair], variaveisNaoBasicasFase1[indicePraEntrarBase] = variaveisNaoBasicasFase1[indicePraEntrarBase], variaveisBasicasFase1[indiceVariavelPraSair]
         has_artificial = any(variable.startswith('artf') for variable in variaveisBasicasFase1)
@@ -179,8 +184,29 @@ def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVari
         [matrizNaoBasicaFase1[i][j] for j in range(len(variaveisNaoBasicasFase1)) if j not in indicesVarArtf]
         for i in range(len(matrizNaoBasicaFase1))
     ]
-    variaveisNaoBasicasFinal = [variable for i, variable in enumerate(variaveisNaoBasicasFase1) if i not in indicesVarArtf]    
+    variaveisNaoBasicasFinal = [variable for i, variable in enumerate(variaveisNaoBasicasFase1) if i not in indicesVarArtf]
+    cnFim = [cnFim[i] for i in range(len(cnFim)) if i not in indicesVarArtf]
+    writeOutputToFile("Indo para a fase 2 com as seguintes infos: \n")
+    writeOutputToFile("Posicao variaveis nao basicas: \n")
+    writeOutputToFile(str(variaveisNaoBasicasFinal) + "\n")
+    writeOutputToFile("Matriz não básica: \n")
+    for i in range(len(matrizNaoBasicaFinal)):
+        writeOutputToFile(str(matrizNaoBasicaFinal[i]) + "\n")
+    writeOutputToFile("Vetor Cn: \n")
+    writeOutputToFile(str(cnFim) + "\n")
+    writeOutputToFile("Posicao variaveis basicas: \n")
+    writeOutputToFile(str(variaveisBasicasFase1) + "\n")
+    writeOutputToFile("Matriz básica: \n")
+    for i in range(len(matrizBasicaFase1)):
+        writeOutputToFile(str(matrizBasicaFase1[i]) + "\n")
+    writeOutputToFile("Vetor B: \n")
+    writeOutputToFile(str(vetorB) + "\n")
+    writeOutputToFile("Vetor Cb: \n")
+    writeOutputToFile(str(cbAux) + "\n")
     
+    simplex(matrizNaoBasicaFinal, matrizBasicaFase1, vetorB, cnFim, cbAux, maxOrMin, nomeVariaveis, variaveisBasicasFase1, variaveisNaoBasicasFinal, True)
+
+      
 # === funções da inversão de matriz ===
 
 def gerarMatrizIdentidade(n):
@@ -319,9 +345,11 @@ def checkUnbound(y):
     return True
 
 # === simplex fase 2 ===
-def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas):
+def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas, veioFase1):
         if maxOrMin == "max":
             custo_n = [-x for x in custo_n]
+            if veioFase1:
+                custo_b = [-x for x in custo_b]
         solucaoOtima = False
         iteracao = 1
         varBasOriginais = variaveisBasicas.copy()

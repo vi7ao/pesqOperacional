@@ -1,0 +1,20 @@
+A1: ok
+A2: ok
+A3: ok
+B1: ok
+B2: ok
+B3: ok
+C1: ???
+D1: ok
+D2: ok
+D3: tratamento bound quando e maior que 0
+E1: ok
+E2: ok
+E3: ???
+E4: ok
+E5: ???
+F1: ok
+F2: segundo o algoritmo ele seria infactivel (iteracao 17 nenhum valor nos custos relativos eh negativo)
+F3: ok
+F4: ok
+F5: ok
