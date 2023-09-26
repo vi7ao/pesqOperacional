@@ -3,7 +3,9 @@ import sys
 import datetime
 
 # para rodar digite no terminal o seguinte comando:
-# python3 oldarenales.py "nome-do-arquivo"
+# python3 simplexSolver.py "nome-do-arquivo"
+# por exemplo:
+# python3 simplexSolver.py "teste.cplex.lp"
 
 
 # === tratamento da leitura do arquivo pelo terminal e do log de saída ===
