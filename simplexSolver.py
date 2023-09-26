@@ -1,8 +1,3 @@
-# guerreiros da br 277
-# Vitor Teles Moreira Passos
-# Renan Augusto Mattos Nutse
-# Andre Negreli Conrado Bini
-
 import cplex
 import sys
 import datetime
@@ -25,7 +20,7 @@ def writeOutputToFile(text):
         with open(file_name, 'a') as file:
             file.write(text)
 
-def getInfoFromCplexFile():
+def readCplexLPFile():
     arquivo = cplex.Cplex(inputFileName, "LP")
     nomeVariaveis = arquivo.variables.get_names()
     numeroVariaveis = arquivo.variables.get_num()
@@ -151,6 +146,7 @@ def formulacaoProblemaArtificial(matrizNaoBasica, matrizBasica, vetorB, nomeVari
         if custosRelativos[indicePraEntrarBase] >= 0:
             has_artificial = any(variable.startswith('artf') for variable in variaveisBasicasFase1)
             if has_artificial:
+                writeOutputToFile
                 print("Problema infactivel")
                 writeOutputToFile("Problema infactivel \n")
                 exit()
@@ -392,11 +388,7 @@ def simplex(matrizNaoBasica, matrizBasica, vetor_b, custo_n, custo_b, maxOrMin, 
                 writeOutputToFile("Iteracao: " + str(iteracao) + "\n")
             
 def main():
-    getInfoFromCplexFile()
-    #if precisaFaseUm:
-    #    matrizNaoBasica, cn = adicionarVariaveisArtificiais(matrizNaoBasica, cn, numeroArtificiais)
-    #    matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis = fase1(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, numeroArtificiais)
-    #simplex(matrizNaoBasica, matrizBasica, vetorB, cn, cb, maxOrMin, nomeVariaveis, variaveisBasicas, variaveisNaoBasicas)
+    readCplexLPFile()
 
 if __name__ == "__main__":
     main()
