@@ -2,6 +2,10 @@
 
 Esse repositório contém uma implementação do algoritmo Simplex pelo método das duas fases.
 
+Ele recebe um arquivo com extensão **.cplex.lp** que contém um problema de otimização linear na seguinte forma:
+
+![Modelo de formulação de um problema de otimização linear.](modelagem.png "Modelo de formulação de um problema de otimização linear.")
+
 Foi um trabalho feito para a disciplina de Pesquisa Operacional, do sétimo período do curso de Ciência da Computação da Universidade Estadual do Centro-Oeste.
 
 ### Como rodar
