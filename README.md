@@ -10,6 +10,12 @@ Foi um trabalho feito para a disciplina de Pesquisa Operacional, do sétimo per�
 
 ### Como rodar
 
+É necessário a instalação da biblioteca **CPLEX** pelo seguinte comando:
+
+`pip install cplex`
+
+Para rodar é utilizado o seguinte comando:
+
 `python3 simplexSolver.py "nome-do-arquivo.cplex.lp"`
 
 ### To-do
